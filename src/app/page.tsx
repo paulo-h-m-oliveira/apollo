@@ -1,103 +1,262 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { motion, Variants, AnimatePresence } from "framer-motion";
+import { useEffect, useState } from "react";
+import LoadingScreen from "./loading-screen"; // Importamos nosso novo componente
+
+// O componente do cursor não muda.
+const CustomCursor = () => {
+  const [position, setPosition] = useState({ x: -100, y: -100 });
+  const [isHovering, setIsHovering] = useState(false);
+  useEffect(() => {
+    const onMouseMove = (e: MouseEvent) =>
+      setPosition({ x: e.clientX, y: e.clientY });
+    const handleMouseOver = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest("[data-hover]"))
+        setIsHovering(true);
+    };
+    const handleMouseOut = (e: MouseEvent) => {
+      if (e.target instanceof Element && e.target.closest("[data-hover]"))
+        setIsHovering(false);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    document.body.addEventListener("mouseover", handleMouseOver);
+    document.body.addEventListener("mouseout", handleMouseOut);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      document.body.removeEventListener("mouseover", handleMouseOver);
+      document.body.removeEventListener("mouseout", handleMouseOut);
+    };
+  }, []);
+  const cursorClasses = `custom-cursor ${isHovering ? "hovering" : ""}`;
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div
+      className={cursorClasses}
+      style={{ left: `${position.x}px`, top: `${position.y}px` }}
+    />
+  );
+};
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+// --- COMPONENTE PRINCIPAL DA PÁGINA ---
+export default function HomePage() {
+  // Novo estado para controlar o carregamento
+  const [isLoading, setIsLoading] = useState(true);
+
+  const containerVariants: Variants = {
+    hidden: { opacity: 0 },
+    visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
+  };
+  const itemVariants: Variants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: { duration: 0.8, ease: "easeOut" },
+    },
+  };
+
+  return (
+    <>
+      <CustomCursor />
+
+      {/* AnimatePresence gerencia a animação de entrada e saída de componentes */}
+      <AnimatePresence>
+        {isLoading && (
+          <LoadingScreen onAnimationComplete={() => setIsLoading(false)} />
+        )}
+      </AnimatePresence>
+
+      {/* O container principal agora só é renderizado quando o loading termina */}
+      {!isLoading && (
+        <motion.div
+          // Animação de entrada para a página principal
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="position-relative d-flex flex-column min-vh-100 justify-content-center align-items-center bg-dark text-white overflow-hidden"
+        >
+          <div className="gradient-bg" />
+          <div className="gradient-bg-2" />
+          <main className="position-relative z-1 text-center px-3">
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
+              <motion.h1
+                className="main-title fw-bolder"
+                variants={itemVariants}
+                data-hover
+              >
+                I'm a graphic designer,
+              </motion.h1>
+              <motion.h1
+                className="main-title fw-bolder"
+                variants={itemVariants}
+                data-hover
+              >
+                UX/UI designer
+              </motion.h1>
+              <motion.h1
+                className="main-title fw-bolder"
+                variants={itemVariants}
+                data-hover
+              >
+                & front-end web developer.
+              </motion.h1>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 1.5, ease: "easeOut" }}
+              className="mt-5"
+            >
+              <a
+                href="#"
+                className="fs-4 fw-light text-white-50 text-decoration-none project-link"
+                data-hover
+              >
+                → See my projects
+              </a>
+            </motion.div>
+          </main>
+          <motion.footer
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 1.8 }}
+            className="position-absolute bottom-0 mb-4 d-flex gap-4"
           >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+            <a
+              href="#"
+              className="text-secondary text-decoration-none footer-link"
+              data-hover
+            >
+              Linkedin
+            </a>
+            <a
+              href="#"
+              className="text-secondary text-decoration-none footer-link"
+              data-hover
+            >
+              Twitter
+            </a>
+            <a
+              href="#"
+              className="text-secondary text-decoration-none footer-link"
+              data-hover
+            >
+              Instagram
+            </a>
+          </motion.footer>
+        </motion.div>
+      )}
+
+      {/* O CSS customizado continua o mesmo */}
+      <style jsx global>{`
+        body {
+          cursor: none;
+        }
+        .main-title {
+          font-size: 2.25rem;
+          letter-spacing: -0.05em;
+        }
+        @media (min-width: 768px) {
+          .main-title {
+            font-size: 3.75rem;
+          }
+        }
+        @media (min-width: 1024px) {
+          .main-title {
+            font-size: 5rem;
+          }
+        }
+        .project-link:hover,
+        .footer-link:hover {
+          color: white !important;
+          transition: color 0.3s;
+        }
+        .gradient-bg,
+        .gradient-bg-2 {
+          position: absolute;
+          border-radius: 9999px;
+          filter: blur(72px);
+          opacity: 0.3;
+          z-index: 0;
+        }
+        .gradient-bg {
+          width: 800px;
+          height: 800px;
+          background-image: linear-gradient(
+            to top right,
+            #9333ea,
+            #ec4899,
+            #ef4444
+          );
+          animation: blob 20s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .gradient-bg-2 {
+          width: 600px;
+          height: 600px;
+          background-image: linear-gradient(
+            to top right,
+            #3b82f6,
+            #2dd4bf,
+            #4ade80
+          );
+          bottom: 0;
+          right: 0;
+          animation: blob2 25s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55);
+        }
+        .custom-cursor {
+          display: none;
+        }
+        @media (min-width: 640px) {
+          .custom-cursor {
+            display: block;
+            width: 1rem;
+            height: 1rem;
+            background-color: white;
+            border-radius: 50%;
+            position: fixed;
+            pointer-events: none;
+            z-index: 9999;
+            transform: translate(-50%, -50%);
+            transition: transform 0.2s ease-out, background-color 0.3s;
+          }
+          .custom-cursor.hovering {
+            transform: translate(-50%, -50%) scale(2.5);
+            background-color: rgba(255, 255, 255, 0.3);
+          }
+        }
+        @keyframes blob {
+          0% {
+            transform: translate(-25%, -25%) scale(1);
+          }
+          33% {
+            transform: translate(25%, -35%) scale(1.2);
+          }
+          66% {
+            transform: translate(-30%, 30%) scale(0.9);
+          }
+          100% {
+            transform: translate(-25%, -25%) scale(1);
+          }
+        }
+        @keyframes blob2 {
+          0% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(20%, -30%) scale(1.1);
+          }
+          66% {
+            transform: translate(-25%, 20%) scale(0.8);
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
+        }
+      `}</style>
+    </>
   );
 }
