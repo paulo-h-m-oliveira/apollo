@@ -2,50 +2,21 @@
 
 import { motion, Variants, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
-import LoadingScreen from "./loading-screen"; // Importamos nosso novo componente
+import LoadingScreen from "./loading-screen";
+import Header from "./components/Header";
+import CustomCursor from "./components/CustomCursor";
 
-// O componente do cursor não muda.
-const CustomCursor = () => {
-  const [position, setPosition] = useState({ x: -100, y: -100 });
-  const [isHovering, setIsHovering] = useState(false);
-  useEffect(() => {
-    const onMouseMove = (e: MouseEvent) =>
-      setPosition({ x: e.clientX, y: e.clientY });
-    const handleMouseOver = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest("[data-hover]"))
-        setIsHovering(true);
-    };
-    const handleMouseOut = (e: MouseEvent) => {
-      if (e.target instanceof Element && e.target.closest("[data-hover]"))
-        setIsHovering(false);
-    };
-    window.addEventListener("mousemove", onMouseMove);
-    document.body.addEventListener("mouseover", handleMouseOver);
-    document.body.addEventListener("mouseout", handleMouseOut);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      document.body.removeEventListener("mouseover", handleMouseOver);
-      document.body.removeEventListener("mouseout", handleMouseOut);
-    };
-  }, []);
-  const cursorClasses = `custom-cursor ${isHovering ? "hovering" : ""}`;
-  return (
-    <div
-      className={cursorClasses}
-      style={{ left: `${position.x}px`, top: `${position.y}px` }}
-    />
-  );
-};
-
-// --- COMPONENTE PRINCIPAL DA PÁGINA ---
+// --- Componente da Página Principal ---
 export default function HomePage() {
-  // Novo estado para controlar o carregamento
+  // Estado para controlar a tela de carregamento
   const [isLoading, setIsLoading] = useState(true);
 
+  // Variants para a animação dos títulos principais
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
   };
+
   const itemVariants: Variants = {
     hidden: { y: 20, opacity: 0 },
     visible: {
@@ -57,26 +28,31 @@ export default function HomePage() {
 
   return (
     <>
+      {/* Componentes reutilizáveis */}
       <CustomCursor />
+      <Header />
 
-      {/* AnimatePresence gerencia a animação de entrada e saída de componentes */}
+      {/* AnimatePresence gerencia a animação de saída da tela de loading */}
       <AnimatePresence>
         {isLoading && (
           <LoadingScreen onAnimationComplete={() => setIsLoading(false)} />
         )}
       </AnimatePresence>
 
-      {/* O container principal agora só é renderizado quando o loading termina */}
+      {/* O conteúdo principal só é renderizado após o loading */}
       {!isLoading && (
         <motion.div
           // Animação de entrada para a página principal
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="position-relative d-flex flex-column min-vh-100 justify-content-center align-items-center bg-dark text-white overflow-hidden"
+          // A classe 'bg-dark' foi removida daqui para permitir que as luzes apareçam
+          className="position-relative d-flex flex-column min-vh-100 justify-content-center align-items-center text-white overflow-hidden"
         >
+          {/* Luzes de fundo (gradientes animados) */}
           <div className="gradient-bg" />
           <div className="gradient-bg-2" />
+
           <main className="position-relative z-1 text-center px-3">
             <motion.div
               variants={containerVariants}
@@ -88,38 +64,55 @@ export default function HomePage() {
                 variants={itemVariants}
                 data-hover
               >
-                I'm a graphic designer,
+                Motion Desing,
               </motion.h1>
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
                 data-hover
-              >
-                UX/UI designer
-              </motion.h1>
+              ></motion.h1>
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
                 data-hover
               >
-                & front-end web developer.
+                vida e movimento para sua marca.
               </motion.h1>
             </motion.div>
+
+            {/* Link "See my projects" com animação pulsante */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 1.5, ease: "easeOut" }}
+              animate={{
+                opacity: 1,
+                y: 0,
+                scale: [1, 1.02, 1], // Animação de pulso
+              }}
+              transition={{
+                duration: 0.8,
+                delay: 1.5,
+                ease: "easeOut",
+                // Configuração para a animação 'scale' repetir infinitamente
+                scale: {
+                  delay: 2.5,
+                  repeat: Infinity,
+                  repeatDelay: 3,
+                  duration: 0.7,
+                  ease: "easeInOut",
+                },
+              }}
               className="mt-5"
             >
               <a
-                href="#"
+                href="/work"
                 className="fs-4 fw-light text-white-50 text-decoration-none project-link"
                 data-hover
               >
-                → See my projects
+                → Veja nossos projetos
               </a>
             </motion.div>
           </main>
+
           <motion.footer
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -151,11 +144,13 @@ export default function HomePage() {
         </motion.div>
       )}
 
-      {/* O CSS customizado continua o mesmo */}
+      {/* Estilos Globais para toda a aplicação */}
       <style jsx global>{`
         body {
           cursor: none;
+          background-color: #111;
         }
+
         .main-title {
           font-size: 2.25rem;
           letter-spacing: -0.05em;
@@ -170,18 +165,20 @@ export default function HomePage() {
             font-size: 5rem;
           }
         }
+
         .project-link:hover,
         .footer-link:hover {
           color: white !important;
           transition: color 0.3s;
         }
+
         .gradient-bg,
         .gradient-bg-2 {
           position: absolute;
           border-radius: 9999px;
           filter: blur(72px);
           opacity: 0.3;
-          z-index: 0;
+          z-index: -1;
         }
         .gradient-bg {
           width: 800px;
@@ -207,6 +204,7 @@ export default function HomePage() {
           right: 0;
           animation: blob2 25s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
+
         .custom-cursor {
           display: none;
         }
@@ -228,6 +226,7 @@ export default function HomePage() {
             background-color: rgba(255, 255, 255, 0.3);
           }
         }
+
         @keyframes blob {
           0% {
             transform: translate(-25%, -25%) scale(1);
