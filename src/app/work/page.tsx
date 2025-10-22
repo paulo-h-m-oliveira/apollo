@@ -15,7 +15,7 @@ interface Project {
   title: string;
   tags: string;
   year: string;
-  imageUrl: string;
+  imageurl: string;
 }
 
 // --- Componente da Página ---
@@ -134,7 +134,7 @@ export default function WorkPage() {
                 >
                   <div className="project-image-wrapper">
                     <motion.img
-                      src={project.imageUrl}
+                      src={project.imageurl}
                       alt={project.title}
                       className="img-fluid"
                       whileHover={{ scale: 1.05 }}
@@ -155,7 +155,7 @@ export default function WorkPage() {
         </div>
 
         <footer className="text-center text-white-50 py-5 fs-small">
-          Designed and coded by Sharlee © 2025
+          Designed and coded by Apollo © 2025
         </footer>
       </motion.div>
 
