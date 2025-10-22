@@ -1,76 +1,104 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react"; // Importe useState e useEffect
 import Link from "next/link";
 import Header from "../components/Header";
 import CustomCursor from "../components/CustomCursor";
+import { supabase } from "../lib/supabaseClient"; // Importe seu cliente Supabase
 
-// ... (dados dos projetos continuam os mesmos) ...
-const projects = [
-  // ... seus projetos aqui ...
-  {
-    id: 1,
-    title: "Sharlee",
-    tags: "Branding, UX/UI Design, Web Development",
-    year: "2024",
-    imageUrl: "...",
-  },
-  {
-    id: 2,
-    title: "Cocolyze",
-    tags: "Branding, Web Design",
-    year: "2023",
-    imageUrl: "...",
-  },
-  {
-    id: 3,
-    title: "Portraits",
-    tags: "Illustration, Art Direction",
-    year: "2023",
-    imageUrl: "...",
-  },
-  {
-    id: 4,
-    title: "Cosmetics Brand",
-    tags: "Branding, Packaging",
-    year: "2022",
-    imageUrl: "...",
-  },
-];
+// 1. Defina um "tipo" para seus projetos
+// Deve corresponder exatamente à sua tabela do Supabase
+interface Project {
+  id: number;
+  created_at: string;
+  title: string;
+  tags: string;
+  year: string;
+  imageUrl: string;
+}
 
+// --- Componente da Página ---
 export default function WorkPage() {
+  // 2. Crie estados para os projetos, loading e erros
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // Variants para animação (sem alteração)
   const gridVariants: Variants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2, // Aumentei o atraso para um efeito mais claro
-      },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
   };
 
-  // --- 1. NOVAS VARIANTS MAIS DINÂMICAS ---
-  // Os cards vão "pular" da tela com um leve desfoque
   const projectVariants: Variants = {
-    hidden: {
-      opacity: 0,
-      y: 50,
-      scale: 0.9,
-      filter: "blur(5px)", // Efeito de desfoque
-    },
+    hidden: { opacity: 0, y: 50, scale: 0.9, filter: "blur(5px)" },
     visible: {
       opacity: 1,
       y: 0,
       scale: 1,
-      filter: "blur(0px)", // Remove o desfoque
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
+      filter: "blur(0px)",
+      transition: { duration: 0.6, ease: "easeOut" },
     },
   };
 
+  // 3. Crie um useEffect para buscar os dados quando a página carregar
+  useEffect(() => {
+    async function fetchProjects() {
+      try {
+        // Busca os dados da sua tabela 'projects'
+        const { data, error } = await supabase
+          .from("projects")
+          .select("*") // Pega todas as colunas
+          .order("year", { ascending: false }); // Ordena pelos mais recentes
+
+        if (error) {
+          throw error;
+        }
+
+        if (data) {
+          setProjects(data); // Salva os projetos no estado
+        }
+      } catch (err: any) {
+        console.error("Erro ao buscar projetos:", err.message);
+        setError("Não foi possível carregar os projetos.");
+      } finally {
+        setIsLoading(false); // Termina o loading
+      }
+    }
+
+    fetchProjects();
+  }, []); // O array vazio [] faz com que isso rode apenas uma vez
+
+  // --- Lógica de Renderização ---
+
+  // 4. Mostrar um spinner enquanto carrega
+  if (isLoading) {
+    return (
+      <div className="position-relative d-flex min-vh-100 text-white justify-content-center align-items-center bg-dark">
+        <Header />
+        <div
+          className="spinner-border"
+          role="status"
+          style={{ width: "3rem", height: "3rem" }}
+        >
+          <span className="visually-hidden">Loading...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 5. Mostrar uma mensagem de erro
+  if (error) {
+    return (
+      <div className="position-relative d-flex min-vh-100 text-danger justify-content-center align-items-center bg-dark">
+        <Header />
+        <p className="fs-3">{error}</p>
+      </div>
+    );
+  }
+
+  // 6. Mostrar os projetos (quando tudo der certo)
   return (
     <>
       <CustomCursor />
@@ -79,7 +107,7 @@ export default function WorkPage() {
       <div className="gradient-bg-2" />
 
       <motion.div
-        className="text-white bg-dark min-vh-100"
+        className="text-white min-vh-100" // Removido bg-dark para as luzes aparecerem
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -91,13 +119,12 @@ export default function WorkPage() {
             initial="hidden"
             animate="visible"
           >
+            {/* Mapeia os projetos vindos do Supabase */}
             {projects.map((project) => (
-              // --- 2. ADICIONADO whileHover NO CARD INTEIRO ---
               <motion.div
                 className="col-lg-6 mb-5"
                 key={project.id}
                 variants={projectVariants}
-                // Animação de "levantar" o card ao passar o mouse
                 whileHover={{ scale: 1.03 }}
               >
                 <Link
@@ -110,7 +137,6 @@ export default function WorkPage() {
                       src={project.imageUrl}
                       alt={project.title}
                       className="img-fluid"
-                      // A imagem interna ainda faz zoom para um efeito parallax
                       whileHover={{ scale: 1.05 }}
                       transition={{ duration: 0.4, ease: "easeInOut" }}
                     />
@@ -127,12 +153,13 @@ export default function WorkPage() {
             ))}
           </motion.div>
         </div>
+
         <footer className="text-center text-white-50 py-5 fs-small">
           Designed and coded by Sharlee © 2025
         </footer>
       </motion.div>
 
-      {/* --- 3. CSS ADICIONAL PARA O EFEITO DE GLOW --- */}
+      {/* --- ESTILOS GLOBAIS --- */}
       <style jsx global>{`
         body {
           cursor: none;
@@ -141,16 +168,13 @@ export default function WorkPage() {
         .fs-small {
           font-size: 0.875rem;
         }
-
         .project-card {
           display: block;
           transition: all 0.3s ease;
         }
-        /* Adiciona um "glow" roxo (combinando com o gradiente) no hover */
         .project-card:hover {
-          box-shadow: 0 20px 50px rgba(147, 51, 234, 0.15); /* Roxo do gradiente */
+          box-shadow: 0 20px 50px rgba(147, 51, 234, 0.15);
         }
-
         .project-image-wrapper {
           overflow: hidden;
           border-radius: 8px;
@@ -158,9 +182,10 @@ export default function WorkPage() {
         .project-card .img-fluid {
           width: 100%;
           object-fit: cover;
+          aspect-ratio: 4 / 3; /* Garante que as imagens tenham a mesma proporção */
         }
 
-        /* ... (Estilos do cursor, gradientes e keyframes permanecem os mesmos) ... */
+        /* ... (Estilos do cursor, gradientes e keyframes) ... */
         .custom-cursor {
           display: none;
         }
@@ -215,10 +240,32 @@ export default function WorkPage() {
           animation: blob2 25s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
         @keyframes blob {
-          /* ... */
+          0% {
+            transform: translate(-25%, -25%) scale(1);
+          }
+          33% {
+            transform: translate(25%, -35%) scale(1.2);
+          }
+          66% {
+            transform: translate(-30%, 30%) scale(0.9);
+          }
+          100% {
+            transform: translate(-25%, -25%) scale(1);
+          }
         }
         @keyframes blob2 {
-          /* ... */
+          0% {
+            transform: translate(0, 0) scale(1);
+          }
+          33% {
+            transform: translate(20%, -30%) scale(1.1);
+          }
+          66% {
+            transform: translate(-25%, 20%) scale(0.8);
+          }
+          100% {
+            transform: translate(0, 0) scale(1);
+          }
         }
       `}</style>
     </>
