@@ -198,7 +198,7 @@ export default function WorkPage() {
         </div>
 
         <footer className="text-center text-white-50 py-5 fs-small">
-          Designed and coded by Sharlee © 2025
+          Designed and coded by Apollo © 2025
         </footer>
       </motion.div>
 
