@@ -58,13 +58,15 @@ export default function HomePage() {
               initial="hidden"
               animate="visible"
             >
+              {/* --- CORREÇÃO AQUI --- */}
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
                 data-hover
               >
-                I'm a graphic designer,
+                I&apos;m a graphic designer,
               </motion.h1>
+              {/* --- FIM DA CORREÇÃO --- */}
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
