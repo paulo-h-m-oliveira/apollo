@@ -64,7 +64,7 @@ export default function HomePage() {
                 variants={itemVariants}
                 data-hover
               >
-                I&apos;m a graphic designer,
+                Motion Design,
               </motion.h1>
               {/* --- FIM DA CORREÇÃO --- */}
               <motion.h1
@@ -72,14 +72,14 @@ export default function HomePage() {
                 variants={itemVariants}
                 data-hover
               >
-                UX/UI designer
+                De movimento a sua marca
               </motion.h1>
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
                 data-hover
               >
-                & front-end web developer.
+                & identidade ao seu negócio.
               </motion.h1>
             </motion.div>
 
@@ -111,7 +111,7 @@ export default function HomePage() {
                 className="fs-4 fw-light text-white-50 text-decoration-none project-link"
                 data-hover
               >
-                → See my projects
+                → Veja os nossos projetos
               </a>
             </motion.div>
           </main>
