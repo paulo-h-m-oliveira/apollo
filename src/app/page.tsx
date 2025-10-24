@@ -46,9 +46,11 @@ export default function HomePage() {
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          className="position-relative d-flex flex-column min-vh-100 justify-content-center align-items-center bg-dark text-white overflow-hidden"
+          // --- CORREÇÃO AQUI: 'bg-dark' REMOVIDO ---
+          className="position-relative d-flex flex-column min-vh-100 justify-content-center align-items-center text-white overflow-hidden"
         >
           {/* Luzes de fundo (gradientes animados) */}
+          {/* Agora elas ficarão visíveis contra o 'body' */}
           <div className="gradient-bg" />
           <div className="gradient-bg-2" />
 
@@ -58,7 +60,6 @@ export default function HomePage() {
               initial="hidden"
               animate="visible"
             >
-              {/* --- CORREÇÃO AQUI --- */}
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
@@ -66,7 +67,6 @@ export default function HomePage() {
               >
                 Motion Design,
               </motion.h1>
-              {/* --- FIM DA CORREÇÃO --- */}
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
@@ -181,7 +181,7 @@ export default function HomePage() {
           border-radius: 9999px;
           filter: blur(72px);
           opacity: 0.3;
-          z-index: -1;
+          z-index: -1; /* Fica atrás do conteúdo (z-index: 1) */
         }
         .gradient-bg {
           width: 800px;
