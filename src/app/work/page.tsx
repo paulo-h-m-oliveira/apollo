@@ -1,36 +1,36 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { useState, useEffect } from "react"; // Importe useState e useEffect
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Header from "../components/Header";
 import CustomCursor from "../components/CustomCursor";
 import { supabase } from "../lib/supabaseClient"; // Importe seu cliente Supabase
 
-// 1. Defina um "tipo" para seus projetos
-// Deve corresponder exatamente à sua tabela do Supabase
 interface Project {
   id: number;
   created_at: string;
   title: string;
   tags: string;
   year: string;
-  imageurl: string;
+  imageUrl: string | null; // Permitir que imageUrl seja null
 }
 
 // --- Componente da Página ---
 export default function WorkPage() {
-  // 2. Crie estados para os projetos, loading e erros
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Variants para animação (sem alteração)
   const gridVariants: Variants = {
     hidden: { opacity: 0 },
-    visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+      },
+    },
   };
-
   const projectVariants: Variants = {
     hidden: { opacity: 0, y: 50, scale: 0.9, filter: "blur(5px)" },
     visible: {
@@ -42,37 +42,58 @@ export default function WorkPage() {
     },
   };
 
-  // 3. Crie um useEffect para buscar os dados quando a página carregar
   useEffect(() => {
     async function fetchProjects() {
       try {
-        // Busca os dados da sua tabela 'projects'
-        const { data, error } = await supabase
+        // 1. Busca os dados brutos (com apenas o nome do arquivo)
+        const { data: rawProjects, error } = await supabase
           .from("projects")
-          .select("*") // Pega todas as colunas
-          .order("year", { ascending: false }); // Ordena pelos mais recentes
+          .select("*")
+          .order("year", { ascending: false });
 
-        if (error) {
-          throw error;
-        }
+        if (error) throw error;
+        if (!rawProjects) return;
 
-        if (data) {
-          setProjects(data); // Salva os projetos no estado
-        }
+        // 2. Transforma os dados para criar as URLs públicas
+        const projectsWithUrls = rawProjects.map((project) => {
+          // --- CORREÇÃO AQUI ---
+          // Verifica se project.imageUrl existe antes de chamar o Supabase Storage
+          if (!project.imageUrl) {
+            console.warn(
+              `Projeto "${project.title}" (ID: ${project.id}) está sem 'imageUrl' no banco de dados.`
+            );
+            return {
+              ...project,
+              imageUrl: null, // Define null em vez de string vazia
+            };
+          }
+          // --- FIM DA CORREÇÃO ---
+
+          // Usamos o método getPublicUrl do Supabase
+          const { data: publicUrlData } = supabase.storage
+            .from("project-images") // O nome do seu bucket
+            .getPublicUrl(project.imageUrl); // O nome do arquivo (ex: "meu-projeto.jpg")
+
+          return {
+            ...project,
+            imageUrl: publicUrlData.publicUrl, // Substitui "meu-projeto.jpg" pela URL completa
+          };
+        });
+
+        console.log("Projetos com URLs geradas:", projectsWithUrls);
+        setProjects(projectsWithUrls); // Salva os projetos com as URLs corretas
       } catch (err: any) {
         console.error("Erro ao buscar projetos:", err.message);
         setError("Não foi possível carregar os projetos.");
       } finally {
-        setIsLoading(false); // Termina o loading
+        setIsLoading(false);
       }
     }
 
     fetchProjects();
-  }, []); // O array vazio [] faz com que isso rode apenas uma vez
+  }, []);
 
-  // --- Lógica de Renderização ---
-
-  // 4. Mostrar um spinner enquanto carrega
+  // --- Lógica de Renderização (Spinner, Erro, etc.) ---
   if (isLoading) {
     return (
       <div className="position-relative d-flex min-vh-100 text-white justify-content-center align-items-center bg-dark">
@@ -88,7 +109,6 @@ export default function WorkPage() {
     );
   }
 
-  // 5. Mostrar uma mensagem de erro
   if (error) {
     return (
       <div className="position-relative d-flex min-vh-100 text-danger justify-content-center align-items-center bg-dark">
@@ -98,7 +118,7 @@ export default function WorkPage() {
     );
   }
 
-  // 6. Mostrar os projetos (quando tudo der certo)
+  // --- Renderização dos Projetos ---
   return (
     <>
       <CustomCursor />
@@ -107,7 +127,7 @@ export default function WorkPage() {
       <div className="gradient-bg-2" />
 
       <motion.div
-        className="text-white min-vh-100" // Removido bg-dark para as luzes aparecerem
+        className="text-white min-vh-100"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -119,7 +139,6 @@ export default function WorkPage() {
             initial="hidden"
             animate="visible"
           >
-            {/* Mapeia os projetos vindos do Supabase */}
             {projects.map((project) => (
               <motion.div
                 className="col-lg-6 mb-5"
@@ -133,13 +152,29 @@ export default function WorkPage() {
                   data-hover
                 >
                   <div className="project-image-wrapper">
-                    <motion.img
-                      src={project.imageurl}
-                      alt={project.title}
-                      className="img-fluid"
-                      whileHover={{ scale: 1.05 }}
-                      transition={{ duration: 0.4, ease: "easeInOut" }}
-                    />
+                    {/* --- CORREÇÃO DE RENDERIZAÇÃO AQUI --- */}
+                    {/* Só renderiza a imagem se a URL existir (não for null) */}
+                    {project.imageUrl ? (
+                      <motion.img
+                        src={project.imageUrl}
+                        alt={project.title}
+                        className="img-fluid"
+                        whileHover={{ scale: 1.05 }}
+                        transition={{ duration: 0.4, ease: "easeInOut" }}
+                        onError={(e) =>
+                          console.error(
+                            `Falha ao carregar imagem: ${project.imageUrl}`,
+                            e
+                          )
+                        }
+                      />
+                    ) : (
+                      // Renderiza um placeholder elegante se não houver imagem
+                      <div className="placeholder-img d-flex align-items-center justify-content-center text-white-50">
+                        <span>Sem Imagem</span>
+                      </div>
+                    )}
+                    {/* --- FIM DA CORREÇÃO --- */}
                   </div>
                   <div className="project-info d-flex justify-content-between text-white mt-3">
                     <div>
@@ -155,7 +190,7 @@ export default function WorkPage() {
         </div>
 
         <footer className="text-center text-white-50 py-5 fs-small">
-          Designed and coded by Apollo © 2025
+          Designed and coded by Sharlee © 2025
         </footer>
       </motion.div>
 
@@ -182,7 +217,15 @@ export default function WorkPage() {
         .project-card .img-fluid {
           width: 100%;
           object-fit: cover;
-          aspect-ratio: 4 / 3; /* Garante que as imagens tenham a mesma proporção */
+          aspect-ratio: 4 / 3;
+        }
+
+        /* --- ESTILO PARA O PLACEHOLDER DA IMAGEM --- */
+        .placeholder-img {
+          width: 100%;
+          aspect-ratio: 4 / 3;
+          background-color: #222; /* Um cinza escuro */
+          font-style: italic;
         }
 
         /* ... (Estilos do cursor, gradientes e keyframes) ... */
