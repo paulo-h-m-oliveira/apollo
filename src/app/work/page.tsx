@@ -82,9 +82,17 @@ export default function WorkPage() {
 
         console.log("Projetos com URLs geradas:", projectsWithUrls);
         setProjects(projectsWithUrls); // Salva os projetos com as URLs corretas
-      } catch (err: any) {
-        console.error("Erro ao buscar projetos:", err.message);
-        setError("Não foi possível carregar os projetos.");
+
+        // --- CORREÇÃO DO CATCH BLOCK ---
+      } catch (err) {
+        let errorMessage = "Não foi possível carregar os projetos.";
+        // Verifica se 'err' é uma instância de Error para acessar 'message' com segurança
+        if (err instanceof Error) {
+          errorMessage = err.message;
+        }
+        console.error("Erro ao buscar projetos:", errorMessage, err);
+        setError(errorMessage);
+        // --- FIM DA CORREÇÃO ---
       } finally {
         setIsLoading(false);
       }

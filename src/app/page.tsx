@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, Variants, AnimatePresence } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useState } from "react"; // 'useEffect' removido daqui
 import LoadingScreen from "./loading-screen";
 import Header from "./components/Header";
 import CustomCursor from "./components/CustomCursor";
@@ -46,8 +46,7 @@ export default function HomePage() {
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          // A classe 'bg-dark' foi removida daqui para permitir que as luzes apareçam
-          className="position-relative d-flex flex-column min-vh-100 justify-content-center align-items-center text-white overflow-hidden"
+          className="position-relative d-flex flex-column min-vh-100 justify-content-center align-items-center bg-dark text-white overflow-hidden"
         >
           {/* Luzes de fundo (gradientes animados) */}
           <div className="gradient-bg" />
@@ -64,19 +63,21 @@ export default function HomePage() {
                 variants={itemVariants}
                 data-hover
               >
-                Motion Desing,
+                I'm a graphic designer,
               </motion.h1>
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
                 data-hover
-              ></motion.h1>
+              >
+                UX/UI designer
+              </motion.h1>
               <motion.h1
                 className="main-title fw-bolder"
                 variants={itemVariants}
                 data-hover
               >
-                vida e movimento para sua marca.
+                & front-end web developer.
               </motion.h1>
             </motion.div>
 
@@ -108,7 +109,7 @@ export default function HomePage() {
                 className="fs-4 fw-light text-white-50 text-decoration-none project-link"
                 data-hover
               >
-                → Veja nossos projetos
+                → See my projects
               </a>
             </motion.div>
           </main>
