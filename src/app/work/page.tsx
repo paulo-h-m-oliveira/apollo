@@ -2,10 +2,10 @@
 
 import { motion, Variants } from "framer-motion";
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import Link from "next/link"; // Importe o Link do Next.js
 import Header from "../components/Header";
 import CustomCursor from "../components/CustomCursor";
-import { supabase } from "../lib/supabaseClient"; // Importe seu cliente Supabase
+import { supabase } from "../lib/supabaseClient";
 
 interface Project {
   id: number;
@@ -13,10 +13,9 @@ interface Project {
   title: string;
   tags: string;
   year: string;
-  imageUrl: string | null; // Permitir que imageUrl seja null
+  imageUrl: string | null;
 }
 
-// --- Componente da Página ---
 export default function WorkPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,12 +23,7 @@ export default function WorkPage() {
 
   const gridVariants: Variants = {
     hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
+    visible: { opacity: 1, transition: { staggerChildren: 0.2 } },
   };
   const projectVariants: Variants = {
     hidden: { opacity: 0, y: 50, scale: 0.9, filter: "blur(5px)" },
@@ -45,7 +39,6 @@ export default function WorkPage() {
   useEffect(() => {
     async function fetchProjects() {
       try {
-        // 1. Busca os dados brutos (com apenas o nome do arquivo)
         const { data: rawProjects, error } = await supabase
           .from("projects")
           .select("*")
@@ -54,45 +47,28 @@ export default function WorkPage() {
         if (error) throw error;
         if (!rawProjects) return;
 
-        // 2. Transforma os dados para criar as URLs públicas
         const projectsWithUrls = rawProjects.map((project) => {
-          // --- CORREÇÃO AQUI ---
-          // Verifica se project.imageUrl existe antes de chamar o Supabase Storage
           if (!project.imageUrl) {
             console.warn(
-              `Projeto "${project.title}" (ID: ${project.id}) está sem 'imageUrl' no banco de dados.`
+              `Projeto "${project.title}" (ID: ${project.id}) está sem 'imageUrl'.`
             );
-            return {
-              ...project,
-              imageUrl: null, // Define null em vez de string vazia
-            };
+            return { ...project, imageUrl: null };
           }
-          // --- FIM DA CORREÇÃO ---
-
-          // Usamos o método getPublicUrl do Supabase
           const { data: publicUrlData } = supabase.storage
-            .from("project-images") // O nome do seu bucket
-            .getPublicUrl(project.imageUrl); // O nome do arquivo (ex: "meu-projeto.jpg")
+            .from("project-images")
+            .getPublicUrl(project.imageUrl);
 
-          return {
-            ...project,
-            imageUrl: publicUrlData.publicUrl, // Substitui "meu-projeto.jpg" pela URL completa
-          };
+          return { ...project, imageUrl: publicUrlData.publicUrl };
         });
 
-        console.log("Projetos com URLs geradas:", projectsWithUrls);
-        setProjects(projectsWithUrls); // Salva os projetos com as URLs corretas
-
-        // --- CORREÇÃO DO CATCH BLOCK ---
+        setProjects(projectsWithUrls);
       } catch (err) {
         let errorMessage = "Não foi possível carregar os projetos.";
-        // Verifica se 'err' é uma instância de Error para acessar 'message' com segurança
         if (err instanceof Error) {
           errorMessage = err.message;
         }
         console.error("Erro ao buscar projetos:", errorMessage, err);
         setError(errorMessage);
-        // --- FIM DA CORREÇÃO ---
       } finally {
         setIsLoading(false);
       }
@@ -101,7 +77,6 @@ export default function WorkPage() {
     fetchProjects();
   }, []);
 
-  // --- Lógica de Renderização (Spinner, Erro, etc.) ---
   if (isLoading) {
     return (
       <div className="position-relative d-flex min-vh-100 text-white justify-content-center align-items-center bg-dark">
@@ -126,7 +101,6 @@ export default function WorkPage() {
     );
   }
 
-  // --- Renderização dos Projetos ---
   return (
     <>
       <CustomCursor />
@@ -154,14 +128,15 @@ export default function WorkPage() {
                 variants={projectVariants}
                 whileHover={{ scale: 1.03 }}
               >
+                {/* --- MUDANÇA AQUI --- */}
+                {/* O Link agora aponta para a página dinâmica do projeto */}
                 <Link
-                  href="#"
+                  href={`/work/${project.id}`}
                   className="project-card text-decoration-none"
                   data-hover
                 >
+                  {/* --- FIM DA MUDANÇA --- */}
                   <div className="project-image-wrapper">
-                    {/* --- CORREÇÃO DE RENDERIZAÇÃO AQUI --- */}
-                    {/* Só renderiza a imagem se a URL existir (não for null) */}
                     {project.imageUrl ? (
                       <motion.img
                         src={project.imageUrl}
@@ -169,20 +144,12 @@ export default function WorkPage() {
                         className="img-fluid"
                         whileHover={{ scale: 1.05 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
-                        onError={(e) =>
-                          console.error(
-                            `Falha ao carregar imagem: ${project.imageUrl}`,
-                            e
-                          )
-                        }
                       />
                     ) : (
-                      // Renderiza um placeholder elegante se não houver imagem
                       <div className="placeholder-img d-flex align-items-center justify-content-center text-white-50">
                         <span>Sem Imagem</span>
                       </div>
                     )}
-                    {/* --- FIM DA CORREÇÃO --- */}
                   </div>
                   <div className="project-info d-flex justify-content-between text-white mt-3">
                     <div>
@@ -204,6 +171,7 @@ export default function WorkPage() {
 
       {/* --- ESTILOS GLOBAIS --- */}
       <style jsx global>{`
+        /* ... (Seus estilos globais existentes) ... */
         body {
           cursor: none;
           background-color: #111;
@@ -227,16 +195,12 @@ export default function WorkPage() {
           object-fit: cover;
           aspect-ratio: 4 / 3;
         }
-
-        /* --- ESTILO PARA O PLACEHOLDER DA IMAGEM --- */
         .placeholder-img {
           width: 100%;
           aspect-ratio: 4 / 3;
-          background-color: #222; /* Um cinza escuro */
+          background-color: #222;
           font-style: italic;
         }
-
-        /* ... (Estilos do cursor, gradientes e keyframes) ... */
         .custom-cursor {
           display: none;
         }
@@ -291,32 +255,10 @@ export default function WorkPage() {
           animation: blob2 25s infinite cubic-bezier(0.68, -0.55, 0.27, 1.55);
         }
         @keyframes blob {
-          0% {
-            transform: translate(-25%, -25%) scale(1);
-          }
-          33% {
-            transform: translate(25%, -35%) scale(1.2);
-          }
-          66% {
-            transform: translate(-30%, 30%) scale(0.9);
-          }
-          100% {
-            transform: translate(-25%, -25%) scale(1);
-          }
+          /* ... */
         }
         @keyframes blob2 {
-          0% {
-            transform: translate(0, 0) scale(1);
-          }
-          33% {
-            transform: translate(20%, -30%) scale(1.1);
-          }
-          66% {
-            transform: translate(-25%, 20%) scale(0.8);
-          }
-          100% {
-            transform: translate(0, 0) scale(1);
-          }
+          /* ... */
         }
       `}</style>
     </>
