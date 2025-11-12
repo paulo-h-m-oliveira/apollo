@@ -1,13 +1,14 @@
 "use client";
 
 import { motion, Variants } from "framer-motion";
-import { useState, useEffect, use } from "react"; // 1. Importar o 'use'
+import { useState, useEffect, use } from "react";
 import { supabase } from "@/app/lib/supabaseClient";
 import Header from "@/app/components/Header";
 import CustomCursor from "@/app/components/CustomCursor";
 import Link from "next/link";
+import Image from "next/image"; // <-- 1. IMPORTADO O NEXT/IMAGE
 
-// Interface para os dados do projeto
+// ... (interfaces ProjectDetails e PageParams) ...
 interface ProjectDetails {
   id: number;
   title: string;
@@ -18,13 +19,9 @@ interface ProjectDetails {
   imageUrl: string | null;
   gallery_images: string[] | null;
 }
-
-// O tipo das props que o Next.js passa (parâmetros da URL)
 interface PageParams {
   id: string;
 }
-
-// A prop 'params' agora é uma Promise que resolve para PageParams
 interface ProjectPageProps {
   params: Promise<PageParams>;
 }
@@ -32,15 +29,13 @@ interface ProjectPageProps {
 export default function ProjectDetailPage({
   params: paramsPromise,
 }: ProjectPageProps) {
-  // 2. Desembrulhar a promise de 'params' com React.use()
   const params = use(paramsPromise);
-  const { id } = params; // 3. Extrair o ID com segurança
+  const { id } = params;
 
   const [project, setProject] = useState<ProjectDetails | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Variants para animações de fade-in
   const fadeIn: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -52,20 +47,18 @@ export default function ProjectDetailPage({
 
   useEffect(() => {
     async function fetchProjectDetails() {
-      if (!id) return; // Usar o ID desembrulhado
+      if (!id) return;
 
       try {
-        // 1. Busca o projeto específico pelo ID
         const { data, error } = await supabase
           .from("projects")
           .select("*")
-          .eq("id", id) // Usar o ID desembrulhado
+          .eq("id", id)
           .single();
 
         if (error) throw new Error(`Projeto não encontrado. (ID: ${id})`);
         if (!data) throw new Error("Dados do projeto não encontrados.");
 
-        // 2. Gera a URL pública para a imagem principal (imageUrl)
         let mainImageUrl: string | null = null;
         if (data.imageUrl) {
           const { data: publicUrlData } = supabase.storage
@@ -74,7 +67,6 @@ export default function ProjectDetailPage({
           mainImageUrl = publicUrlData.publicUrl;
         }
 
-        // 3. Gera as URLs públicas para a galeria de imagens
         let galleryImageUrls: string[] = [];
         if (data.gallery_images && Array.isArray(data.gallery_images)) {
           galleryImageUrls = data.gallery_images.map((imageName: string) => {
@@ -85,7 +77,6 @@ export default function ProjectDetailPage({
           });
         }
 
-        // 4. Salva o projeto completo no estado
         setProject({
           ...data,
           imageUrl: mainImageUrl,
@@ -104,10 +95,9 @@ export default function ProjectDetailPage({
     }
 
     fetchProjectDetails();
-  }, [id]); // 4. Usar o 'id' estável na dependência do useEffect
+  }, [id]);
 
   // --- Renderização dos Estados ---
-
   if (isLoading) {
     return (
       <div className="position-relative d-flex min-vh-100 text-white justify-content-center align-items-center bg-dark">
@@ -137,7 +127,6 @@ export default function ProjectDetailPage({
   }
 
   // --- Renderização do Projeto ---
-
   return (
     <>
       <CustomCursor />
@@ -150,7 +139,6 @@ export default function ProjectDetailPage({
           className="container-lg"
           style={{ paddingTop: "120px", paddingBottom: "120px" }}
         >
-          {/* --- Cabeçalho do Projeto --- */}
           <motion.div variants={fadeIn} initial="hidden" animate="visible">
             <h1 className="main-title-details fw-bolder mb-4">
               {project.title}
@@ -166,11 +154,15 @@ export default function ProjectDetailPage({
               animate="visible"
               transition={{ delay: 0.2 }}
             >
-              <img
+              {/* --- 2. CORREÇÃO AQUI --- */}
+              <Image
                 src={project.imageUrl}
                 alt={`${project.title} main image`}
-                className="img-fluid"
+                fill // Preenche o contêiner
+                style={{ objectFit: "cover" }} // Garante que a imagem cubra o espaço
+                priority // Ajuda no LCP (aviso que o Next.js deu)
               />
+              {/* --- FIM DA CORREÇÃO --- */}
             </motion.div>
           )}
 
@@ -226,11 +218,15 @@ export default function ProjectDetailPage({
                 {project.gallery_images.map((imgUrl, index) => (
                   <div className="col-md-6" key={index}>
                     <div className="project-gallery-image-wrapper">
-                      <img
+                      {/* --- 3. CORREÇÃO AQUI --- */}
+                      <Image
                         src={imgUrl}
                         alt={`Gallery image ${index + 1}`}
-                        className="img-fluid"
+                        fill
+                        style={{ objectFit: "cover" }}
+                        // 'priority' não é necessário para imagens de galeria
                       />
+                      {/* --- FIM DA CORREÇÃO --- */}
                     </div>
                   </div>
                 ))}
@@ -318,20 +314,21 @@ export default function ProjectDetailPage({
           }
         }
 
+        /* --- 4. CSS ATUALIZADO --- */
         .project-main-image-wrapper,
         .project-gallery-image-wrapper {
+          position: relative; /* Obrigatório para o Image 'fill' */
+          aspect-ratio: 16 / 9; /* Define a proporção (ajuste 16/9, 4/3, etc. como preferir) */
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+          background-color: #222; /* Fundo enquanto a imagem carrega */
         }
-        .project-main-image-wrapper .img-fluid,
-        .project-gallery-image-wrapper .img-fluid {
-          width: 100%;
-          object-fit: cover;
-        }
+        /* Não precisamos mais das regras .img-fluid */
+
         .project-description {
           line-height: 1.7;
-          color: #d1d5db; /* gray-300 */
+          color: #d1d5db;
         }
         .metadata-box {
           background-color: rgba(255, 255, 255, 0.03);

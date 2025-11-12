@@ -1,10 +1,11 @@
 "use client";
 
 import { motion, Variants, AnimatePresence } from "framer-motion";
-import { useState } from "react"; // 'useEffect' removido daqui
+import { useState } from "react";
 import LoadingScreen from "./loading-screen";
 import Header from "./components/Header";
 import CustomCursor from "./components/CustomCursor";
+import Link from "next/link"; // <-- 1. IMPORTADO O LINK
 
 // --- Componente da Página Principal ---
 export default function HomePage() {
@@ -46,11 +47,10 @@ export default function HomePage() {
           initial={{ opacity: 0, scale: 1.05 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5, delay: 0.2 }}
-          // --- CORREÇÃO AQUI: 'bg-dark' REMOVIDO ---
+          // Removido o 'bg-dark' para as luzes aparecerem
           className="position-relative d-flex flex-column min-vh-100 justify-content-center align-items-center text-white overflow-hidden"
         >
           {/* Luzes de fundo (gradientes animados) */}
-          {/* Agora elas ficarão visíveis contra o 'body' */}
           <div className="gradient-bg" />
           <div className="gradient-bg-2" />
 
@@ -106,13 +106,16 @@ export default function HomePage() {
               }}
               className="mt-5"
             >
-              <a
+              {/* --- 2. CORREÇÃO AQUI --- */}
+              {/* Trocado <a> por <Link> para navegação interna do Next.js */}
+              <Link
                 href="/work"
                 className="fs-4 fw-light text-white-50 text-decoration-none project-link"
                 data-hover
               >
                 → Veja os nossos projetos
-              </a>
+              </Link>
+              {/* --- FIM DA CORREÇÃO --- */}
             </motion.div>
           </main>
 
@@ -181,7 +184,7 @@ export default function HomePage() {
           border-radius: 9999px;
           filter: blur(72px);
           opacity: 0.3;
-          z-index: -1; /* Fica atrás do conteúdo (z-index: 1) */
+          z-index: -1;
         }
         .gradient-bg {
           width: 800px;
