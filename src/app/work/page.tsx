@@ -2,11 +2,22 @@
 
 import { motion, Variants } from "framer-motion";
 import { useState, useEffect } from "react";
-import Link from "next/link"; // Importe o Link do Next.js
+import Link from "next/link";
 import Header from "../components/Header";
 import CustomCursor from "../components/CustomCursor";
 import { supabase } from "../lib/supabaseClient";
 
+// Interface para os DADOS VINDOS DO SUPABASE
+interface SupabaseProject {
+  id: number;
+  created_at: string;
+  title: string;
+  tags: string;
+  year: string;
+  image_url: string | null;
+}
+
+// Interface para os DADOS USADOS PELO COMPONENTE
 interface Project {
   id: number;
   created_at: string;
@@ -42,23 +53,35 @@ export default function WorkPage() {
         const { data: rawProjects, error } = await supabase
           .from("projects")
           .select("*")
-          .order("year", { ascending: false });
+          .order("year", { ascending: false })
+          .returns<SupabaseProject[]>();
 
         if (error) throw error;
         if (!rawProjects) return;
 
-        const projectsWithUrls = rawProjects.map((project) => {
-          if (!project.imageUrl) {
-            console.warn(
-              `Projeto "${project.title}" (ID: ${project.id}) está sem 'imageUrl'.`
-            );
-            return { ...project, imageUrl: null };
-          }
-          const { data: publicUrlData } = supabase.storage
-            .from("project-images")
-            .getPublicUrl(project.imageUrl);
+        const projectsWithUrls: Project[] = rawProjects.map((dbProject) => {
+          const fileName = dbProject.image_url;
+          let publicUrl: string | null = null;
 
-          return { ...project, imageUrl: publicUrlData.publicUrl };
+          if (!fileName) {
+            console.warn(
+              `Projeto "${dbProject.title}" (ID: ${dbProject.id}) está sem 'image_url' no DB.`
+            );
+          } else {
+            const { data: publicUrlData } = supabase.storage
+              .from("project-images")
+              .getPublicUrl(fileName);
+            publicUrl = publicUrlData.publicUrl;
+          }
+
+          return {
+            id: dbProject.id,
+            created_at: dbProject.created_at,
+            title: dbProject.title,
+            tags: dbProject.tags,
+            year: dbProject.year,
+            imageUrl: publicUrl,
+          };
         });
 
         setProjects(projectsWithUrls);
@@ -128,24 +151,24 @@ export default function WorkPage() {
                 variants={projectVariants}
                 whileHover={{ scale: 1.03 }}
               >
-                {/* --- MUDANÇA AQUI --- */}
-                {/* O Link agora aponta para a página dinâmica do projeto */}
                 <Link
                   href={`/work/${project.id}`}
                   className="project-card text-decoration-none"
                   data-hover
                 >
-                  {/* --- FIM DA MUDANÇA --- */}
                   <div className="project-image-wrapper">
+                    {" "}
+                    {/* O contêiner da imagem */}
                     {project.imageUrl ? (
                       <motion.img
                         src={project.imageUrl}
                         alt={project.title}
-                        className="img-fluid"
+                        className="img-fluid" // A imagem em si
                         whileHover={{ scale: 1.05 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
                       />
                     ) : (
+                      // O placeholder
                       <div className="placeholder-img d-flex align-items-center justify-content-center text-white-50">
                         <span>Sem Imagem</span>
                       </div>
@@ -170,8 +193,9 @@ export default function WorkPage() {
       </motion.div>
 
       {/* --- ESTILOS GLOBAIS --- */}
+      {/* PRESTE ATENÇÃO NAS MUDANÇAS ABAIXO */}
       <style jsx global>{`
-        /* ... (Seus estilos globais existentes) ... */
+        /* ... (estilos de body, fs-small, project-card, etc.) ... */
         body {
           cursor: none;
           background-color: #111;
@@ -186,21 +210,39 @@ export default function WorkPage() {
         .project-card:hover {
           box-shadow: 0 20px 50px rgba(147, 51, 234, 0.15);
         }
+
+        /* --- MUDANÇA AQUI --- */
+        /* Este é o contêiner que "força" a proporção */
         .project-image-wrapper {
           overflow: hidden;
           border-radius: 8px;
+          background-color: #222; /* Fundo escuro para o caso da imagem demorar a carregar */
+
+          /* A MÁGICA ESTÁ AQUI: */
+          aspect-ratio: 4 / 3; /* Força uma proporção de 4:3 (largura:altura) */
+          /* Você pode mudar para 16 / 9 para um visual mais "widescreen" */
+          /* Ou para 1 / 1 para um visual "quadrado" */
         }
+
+        /* --- MUDANÇA AQUI --- */
+        /* Isso faz a imagem preencher o contêiner */
         .project-card .img-fluid {
           width: 100%;
-          object-fit: cover;
-          aspect-ratio: 4 / 3;
+          height: 100%; /* Força a imagem a preencher a altura do wrapper */
+          object-fit: cover; /* ESSENCIAL: Preenche o espaço sem distorcer. Corta o excesso. */
         }
+
+        /* --- MUDANÇA AQUI --- */
+        /* Isso garante que o placeholder também obedeça ao novo contêiner */
         .placeholder-img {
           width: 100%;
-          aspect-ratio: 4 / 3;
-          background-color: #222;
+          height: 100%; /* Faz o placeholder preencher a altura do wrapper */
           font-style: italic;
+          border-radius: 8px;
+          /* As classes 'd-flex' do Bootstrap já cuidam do alinhamento */
         }
+
+        /* ... (O restante dos seus estilos: custom-cursor, gradient-bg, keyframes, etc.) ... */
         .custom-cursor {
           display: none;
         }
