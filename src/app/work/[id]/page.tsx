@@ -6,7 +6,7 @@ import { supabase } from "@/app/lib/supabaseClient";
 import Header from "@/app/components/Header";
 import CustomCursor from "@/app/components/CustomCursor";
 import Link from "next/link";
-import Image from "next/image";
+// import Image from 'next/image'; // <-- REMOVIDO
 
 // Interface para DADOS VINDOS DO SUPABASE (snake_case)
 interface SupabaseData {
@@ -76,10 +76,9 @@ export default function ProjectDetailPage({
         // 2. Gera a URL pública para a imagem principal (lendo data.image_url)
         let mainImageUrl: string | null = null;
         if (data.image_url) {
-          // <-- CORREÇÃO AQUI
           const { data: publicUrlData } = supabase.storage
             .from("project-images")
-            .getPublicUrl(data.image_url); // <-- CORREÇÃO AQUI
+            .getPublicUrl(data.image_url);
           mainImageUrl = publicUrlData.publicUrl;
         }
 
@@ -177,12 +176,11 @@ export default function ProjectDetailPage({
               animate="visible"
               transition={{ delay: 0.2 }}
             >
-              <Image
+              {/* --- 1. REVERTIDO PARA <img> --- */}
+              <motion.img
                 src={project.imageUrl}
                 alt={`${project.title} main image`}
-                fill
-                style={{ objectFit: "cover" }}
-                priority
+                className="img-fluid"
               />
             </motion.div>
           )}
@@ -240,11 +238,11 @@ export default function ProjectDetailPage({
                 {project.gallery_images.map((imgUrl, index) => (
                   <div className="col-md-6" key={index}>
                     <div className="project-gallery-image-wrapper">
-                      <Image
+                      {/* --- 2. REVERTIDO PARA <img> --- */}
+                      <motion.img
                         src={imgUrl}
                         alt={`Gallery image ${index + 1}`}
-                        fill
-                        style={{ objectFit: "cover" }}
+                        className="img-fluid"
                       />
                     </div>
                   </div>
@@ -341,6 +339,14 @@ export default function ProjectDetailPage({
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
           background-color: #222;
+        }
+
+        /* --- 3. CSS ADICIONADO PARA FAZER <img> FUNCIONAR --- */
+        .project-main-image-wrapper .img-fluid,
+        .project-gallery-image-wrapper .img-fluid {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
         }
 
         .project-description {
