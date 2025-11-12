@@ -6,9 +6,21 @@ import { supabase } from "@/app/lib/supabaseClient";
 import Header from "@/app/components/Header";
 import CustomCursor from "@/app/components/CustomCursor";
 import Link from "next/link";
-import Image from "next/image"; // <-- 1. IMPORTADO O NEXT/IMAGE
+import Image from "next/image";
 
-// ... (interfaces ProjectDetails e PageParams) ...
+// Interface para DADOS VINDOS DO SUPABASE (snake_case)
+interface SupabaseData {
+  id: number;
+  title: string;
+  tags: string;
+  year: string;
+  client_name: string | null;
+  description: string | null;
+  image_url: string | null; // <-- Coluna do DB
+  gallery_images: string[] | null; // <-- Coluna do DB
+}
+
+// Interface para DADOS USADOS NO COMPONENTE (camelCase)
 interface ProjectDetails {
   id: number;
   title: string;
@@ -16,9 +28,10 @@ interface ProjectDetails {
   year: string;
   client_name: string | null;
   description: string | null;
-  imageUrl: string | null;
-  gallery_images: string[] | null;
+  imageUrl: string | null; // <-- Prop do componente
+  gallery_images: string[] | null; // <-- Prop do componente
 }
+
 interface PageParams {
   id: string;
 }
@@ -50,23 +63,27 @@ export default function ProjectDetailPage({
       if (!id) return;
 
       try {
+        // 1. Busca os dados brutos (snake_case)
         const { data, error } = await supabase
           .from("projects")
           .select("*")
           .eq("id", id)
-          .single();
+          .single(); // <-- .returns<SupabaseData>() FOI REMOVIDO DESTA LINHA
 
         if (error) throw new Error(`Projeto não encontrado. (ID: ${id})`);
         if (!data) throw new Error("Dados do projeto não encontrados.");
 
+        // 2. Gera a URL pública para a imagem principal (lendo data.image_url)
         let mainImageUrl: string | null = null;
-        if (data.imageUrl) {
+        if (data.image_url) {
+          // <-- CORREÇÃO AQUI
           const { data: publicUrlData } = supabase.storage
             .from("project-images")
-            .getPublicUrl(data.imageUrl);
+            .getPublicUrl(data.image_url); // <-- CORREÇÃO AQUI
           mainImageUrl = publicUrlData.publicUrl;
         }
 
+        // 3. Gera as URLs públicas para a galeria de imagens
         let galleryImageUrls: string[] = [];
         if (data.gallery_images && Array.isArray(data.gallery_images)) {
           galleryImageUrls = data.gallery_images.map((imageName: string) => {
@@ -77,10 +94,16 @@ export default function ProjectDetailPage({
           });
         }
 
+        // 4. Salva o projeto formatado em camelCase no estado
         setProject({
-          ...data,
-          imageUrl: mainImageUrl,
-          gallery_images: galleryImageUrls,
+          id: data.id,
+          title: data.title,
+          tags: data.tags,
+          year: data.year,
+          client_name: data.client_name,
+          description: data.description,
+          imageUrl: mainImageUrl, // Salva a URL principal
+          gallery_images: galleryImageUrls, // Salva as URLs da galeria
         });
       } catch (err) {
         let errorMessage = "Não foi possível carregar o projeto.";
@@ -146,7 +169,7 @@ export default function ProjectDetailPage({
           </motion.div>
 
           {/* --- Imagem Principal --- */}
-          {project.imageUrl && (
+          {project.imageUrl && ( // Agora lê 'imageUrl' (camelCase) do estado
             <motion.div
               className="project-main-image-wrapper mb-5"
               variants={fadeIn}
@@ -154,15 +177,13 @@ export default function ProjectDetailPage({
               animate="visible"
               transition={{ delay: 0.2 }}
             >
-              {/* --- 2. CORREÇÃO AQUI --- */}
               <Image
                 src={project.imageUrl}
                 alt={`${project.title} main image`}
-                fill // Preenche o contêiner
-                style={{ objectFit: "cover" }} // Garante que a imagem cubra o espaço
-                priority // Ajuda no LCP (aviso que o Next.js deu)
+                fill
+                style={{ objectFit: "cover" }}
+                priority
               />
-              {/* --- FIM DA CORREÇÃO --- */}
             </motion.div>
           )}
 
@@ -205,6 +226,7 @@ export default function ProjectDetailPage({
           </motion.div>
 
           {/* --- Galeria de Imagens --- */}
+          {/* Agora lê 'gallery_images' (snake_case) do estado */}
           {project.gallery_images && project.gallery_images.length > 0 && (
             <motion.div
               className="mt-5 pt-5"
@@ -218,15 +240,12 @@ export default function ProjectDetailPage({
                 {project.gallery_images.map((imgUrl, index) => (
                   <div className="col-md-6" key={index}>
                     <div className="project-gallery-image-wrapper">
-                      {/* --- 3. CORREÇÃO AQUI --- */}
                       <Image
                         src={imgUrl}
                         alt={`Gallery image ${index + 1}`}
                         fill
                         style={{ objectFit: "cover" }}
-                        // 'priority' não é necessário para imagens de galeria
                       />
-                      {/* --- FIM DA CORREÇÃO --- */}
                     </div>
                   </div>
                 ))}
@@ -314,17 +333,15 @@ export default function ProjectDetailPage({
           }
         }
 
-        /* --- 4. CSS ATUALIZADO --- */
         .project-main-image-wrapper,
         .project-gallery-image-wrapper {
-          position: relative; /* Obrigatório para o Image 'fill' */
-          aspect-ratio: 16 / 9; /* Define a proporção (ajuste 16/9, 4/3, etc. como preferir) */
+          position: relative;
+          aspect-ratio: 16 / 9;
           border-radius: 12px;
           overflow: hidden;
           box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-          background-color: #222; /* Fundo enquanto a imagem carrega */
+          background-color: #222;
         }
-        /* Não precisamos mais das regras .img-fluid */
 
         .project-description {
           line-height: 1.7;
